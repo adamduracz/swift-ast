@@ -65,6 +65,12 @@ let package = Package(
         "Frontend",
       ]
     ),
+    Target(
+      name: "Example",
+      dependencies: [
+        "Frontend",
+      ]
+    ),
 
     // MARK: Tests
 

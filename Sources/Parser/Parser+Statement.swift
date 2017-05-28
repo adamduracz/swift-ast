@@ -19,105 +19,6 @@ import AST
 import Lexer
 
 extension Parser {
-  open func parseStatements() throws -> Statements {
-    var stmts = [Statement]()
-    while true {
-      switch _lexer.look().kind {
-      case .eof, .rightBrace, .default, .case:
-        return stmts
-      default:
-        stmts.append(try parseStatement())
-      }
-    }
-  }
-
-  open func parseStatement() throws -> Statement {
-    let stmt: Statement
-    let lookedRange = getLookedRange()
-    switch _lexer.read([
-      .for, .while, .repeat, // loop
-      .if, .guard, .switch, // branch
-      // identifier as labelel statement
-      .defer, // defer
-      .do, // do
-      .break, .continue, .fallthrough, .return, .throw, // control transfer
-      // compiler control
-      .hash,
-      // declaration statement
-      // expression statement
-    ]) {
-    case .for:
-      stmt = try parseForInStatement(startLocation: lookedRange.start)
-    case .while:
-      stmt = try parseWhileStatement(startLocation: lookedRange.start)
-    case .repeat:
-      stmt = try parseRepeatWhileStatement(startLocation: lookedRange.start)
-    case .if:
-      stmt = try parseIfStatement(startLocation: lookedRange.start)
-    case .guard:
-      stmt = try parseGuardStatement(startLocation: lookedRange.start)
-    case .switch:
-      stmt = try parseSwitchStatement(startLocation: lookedRange.start)
-    case .break:
-      stmt = parseBreakStatement(startRange: lookedRange)
-    case .continue:
-      stmt = parseContinueStatement(startRange: lookedRange)
-    case .fallthrough:
-      let fallthroughStmt = FallthroughStatement()
-      fallthroughStmt.setSourceRange(lookedRange)
-      stmt = fallthroughStmt
-    case .return:
-      stmt = try parseReturnStatement(startRange: lookedRange)
-    case .throw:
-      stmt = try parseThrowStatement(startLocation: lookedRange.start)
-    case .defer:
-      stmt = try parseDeferStatement(startLocation: lookedRange.start)
-    case .do:
-      stmt = try parseDoStatement(startLocation: lookedRange.start)
-    case let .identifier(name):
-      if _lexer.look(ahead: 1).kind == .colon &&
-        (
-          _lexer.look(ahead: 2).kind == .for ||
-          _lexer.look(ahead: 2).kind == .while ||
-          _lexer.look(ahead: 2).kind == .repeat ||
-          _lexer.look(ahead: 2).kind == .if ||
-          _lexer.look(ahead: 2).kind == .switch ||
-          _lexer.look(ahead: 2).kind == .do
-        )
-      {
-        _lexer.advance(by: 2)
-        stmt = try parseLabeledStatement(
-          withLabelName: name, startLocation: lookedRange.start)
-      } else if name == "precedencegroup" {
-        stmt = try parseDeclaration()
-      } else {
-        // if identifier is not immediately followed by a colon
-        // and then one of the statement prefix keywords,
-        // then we try to parase an expression that starts with this identifier
-        stmt = try parseExpression()
-      }
-    case .hash:
-      stmt = try parseCompilerControlStatement(startLocation: lookedRange.start)
-    case .import, .let, .var, .typealias, .func, .enum, .indirect,
-      .struct, .init, .deinit, .extension, .subscript, .operator, .protocol:
-      stmt = try parseDeclaration()
-    case .at:
-      stmt = try parseDeclaration()
-    default:
-      if _lexer.look().kind.isModifier {
-        stmt = try parseDeclaration()
-      } else {
-        stmt = try parseExpression()
-      }
-    }
-    if !_lexer.match([.semicolon, .lineFeed, .eof]) &&
-      _lexer.look().kind != .rightBrace
-    {
-      try _raiseError(.statementSameLineWithoutSemicolon)
-    }
-    return stmt
-  }
-
   func parseThrowStatement(
     startLocation: SourceLocation
   ) throws -> ThrowStatement {
@@ -240,7 +141,7 @@ extension Parser {
     return ctrlStmt
   }
 
-  private func parseLabeledStatement(
+  func parseLabeledStatement(
     withLabelName name: String, startLocation: SourceLocation
   ) throws -> LabeledStatement {
     let stmt: Statement
@@ -266,7 +167,7 @@ extension Parser {
     return labeledStmt
   }
 
-  private func parseDoStatement(
+  func parseDoStatement(
     startLocation: SourceLocation
   ) throws -> DoStatement {
     let codeBlock = try parseCodeBlock()
@@ -300,7 +201,7 @@ extension Parser {
     return doStmt
   }
 
-  private func parseSwitchStatement(
+  func parseSwitchStatement(
     startLocation: SourceLocation
   ) throws -> SwitchStatement {
     let expr = try parseExpression(config: noTrailingConfig)
@@ -354,7 +255,7 @@ extension Parser {
     return switchStmt
   }
 
-  private func parseGuardStatement(
+  func parseGuardStatement(
     startLocation: SourceLocation
   ) throws -> GuardStatement {
     let conditionList = try parseConditionList()
@@ -368,7 +269,7 @@ extension Parser {
     return guardStmt
   }
 
-  private func parseIfStatement(
+  func parseIfStatement(
     startLocation: SourceLocation
   ) throws -> IfStatement {
     let conditionList = try parseConditionList()
@@ -400,7 +301,7 @@ extension Parser {
     return ifStmt
   }
 
-  private func parseRepeatWhileStatement(
+  func parseRepeatWhileStatement(
     startLocation: SourceLocation
   ) throws -> RepeatWhileStatement {
     let codeBlock = try parseCodeBlock()
@@ -414,7 +315,7 @@ extension Parser {
     return repeatStmt
   }
 
-  private func parseWhileStatement(
+  func parseWhileStatement(
     startLocation: SourceLocation
   ) throws -> WhileStatement {
     let conditionList = try parseConditionList()
@@ -425,7 +326,7 @@ extension Parser {
     return whileStmt
   }
 
-  private func parseConditionList() throws -> ConditionList {
+  func parseConditionList() throws -> ConditionList {
     var conditionList: ConditionList = []
     repeat {
       let condition = try parseCondition()
@@ -434,7 +335,7 @@ extension Parser {
     return conditionList
   }
 
-  private func parseCondition() throws -> Condition {
+  func parseCondition() throws -> Condition {
     switch _lexer.read([.let, .var, .case, .hash]) {
     case .let:
       let cond = try parseCaseCondition()
@@ -453,7 +354,7 @@ extension Parser {
     }
   }
 
-  private func parseCaseCondition(
+  func parseCaseCondition(
     config: ParserPatternConfig = ParserPatternConfig()
   ) throws -> (pattern: Pattern, expression: Expression) {
     var mutableConfig = config
@@ -475,7 +376,7 @@ extension Parser {
     return (pattern, expr)
   }
 
-  private func parseAvailabilityCondition() throws -> Condition {
+  func parseAvailabilityCondition() throws -> Condition {
     guard case .identifier("available") = _lexer.look().kind else {
       throw _raiseFatal(.expectedAvailableKeyword)
     }
@@ -530,7 +431,7 @@ extension Parser {
     return .availability(AvailabilityCondition(arguments: arguments))
   }
 
-  private func parseForInStatement(
+  func parseForInStatement(
     startLocation: SourceLocation
   ) throws -> ForInStatement {
     let isCaseMatching = _lexer.match(.case)

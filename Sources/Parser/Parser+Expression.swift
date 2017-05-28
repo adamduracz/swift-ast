@@ -28,34 +28,13 @@ public struct ParserExpressionConfig {
 }
 
 extension Parser {
-  open func parseExpressionList(
-    config: ParserExpressionConfig = ParserExpressionConfig()
-  ) throws -> ExpressionList {
-    var exprs: [Expression] = []
-    repeat {
-      let expr = try parseExpression(config: config)
-      exprs.append(expr)
-    } while _lexer.match(.comma)
-    return exprs
-  }
-
-  open func parseExpression(
-    config: ParserExpressionConfig = ParserExpressionConfig()
-  ) throws -> Expression {
-    let tryKind = parseTryKind()
-    let prefixExpr = try parsePrefixExpression(config: config)
-    let expr = try parseBinaryExpressions(
-      leftExpression: prefixExpr, config: config)
-    return tryKind.wrap(expr: expr)
-  }
-
-  private enum TryKind {
+  enum TryKind {
     case `try`(SourceLocation)
     case forcedTry(SourceLocation)
     case optionalTry(SourceLocation)
     case noTry
 
-    fileprivate func wrap(expr: Expression) -> Expression {
+    func wrap(expr: Expression) -> Expression {
       switch self {
       case .try(let startLocation):
         let tryOpExpr = TryOperatorExpression(kind: .try(expr))
@@ -75,7 +54,7 @@ extension Parser {
     }
   }
 
-  private func parseTryKind() -> TryKind {
+  func parseTryKind() -> TryKind {
     let startLocation = getStartLocation()
     guard _lexer.match(.try) else {
       return .noTry
@@ -89,7 +68,7 @@ extension Parser {
     }
   }
 
-  private func parseBinaryExpressions(
+  func parseBinaryExpressions(
     leftExpression: Expression, config: ParserExpressionConfig
   ) throws -> Expression {
     var resultExpr: Expression = leftExpression
@@ -182,7 +161,7 @@ extension Parser {
     return resultExpr
   }
 
-  private func parsePrefixExpression(
+  func parsePrefixExpression(
     config: ParserExpressionConfig
   ) throws -> Expression {
     let startLocation = getStartLocation()
@@ -206,7 +185,7 @@ extension Parser {
     }
   }
 
-  private func parsePostfixExpression(
+  func parsePostfixExpression(
     config: ParserExpressionConfig
   ) throws -> PostfixExpression {
     var resultExpr: PostfixExpression = try parsePrimaryExpression()
@@ -303,7 +282,7 @@ extension Parser {
     return resultExpr
   }
 
-  private func parseFunctionCallExpression(
+  func parseFunctionCallExpression(
     postfixExpression expr: PostfixExpression, config: ParserExpressionConfig
   ) throws -> PostfixExpression {
     func parseArgumentExpr(op: Operator) -> Expression? {
@@ -431,7 +410,7 @@ extension Parser {
     return funcCallExpr
   }
 
-  private func isArgumentNames() -> Bool {
+  func isArgumentNames() -> Bool {
     guard _lexer.look().kind == .leftParen else {
       return false
     }
@@ -453,7 +432,7 @@ extension Parser {
     }
   }
 
-  private func parseArgumentNames() throws -> ([String], SourceRange)? {
+  func parseArgumentNames() throws -> ([String], SourceRange)? {
     guard isArgumentNames() else {
       return nil
     }
@@ -476,7 +455,7 @@ extension Parser {
     return (argumentNames, SourceRange(start: startLocation, end: endLocation))
   }
 
-  private func parsePostfixMemberExpression(
+  func parsePostfixMemberExpression(
     postfixExpression expr: PostfixExpression
   ) throws -> PostfixExpression {
     func getTupleIndex() -> (Int, Int)? {
@@ -572,7 +551,7 @@ extension Parser {
     }
   }
 
-  private func parsePrimaryExpression() throws -> PrimaryExpression {
+  func parsePrimaryExpression() throws -> PrimaryExpression {
     let lookedRange = getLookedRange()
     let matched = _lexer.read([
       .dummyImplicitParameterName,
@@ -673,7 +652,7 @@ extension Parser {
    So when the condition meets,
    this returns a `ParenthesizedExpression` accordingly.
    */
-  private func parseParenthesizedExpression(
+  func parseParenthesizedExpression(
     startLocation: SourceLocation
   ) throws -> PrimaryExpression {
     var endLocation = getEndLocation()
@@ -719,7 +698,7 @@ extension Parser {
     return tupleExpr
   }
 
-  private func parseSuperclassExpression(
+  func parseSuperclassExpression(
     startRange: SourceRange
   ) throws -> SuperclassExpression {
     var endLocation = startRange.end
@@ -749,7 +728,7 @@ extension Parser {
     return superExpr
   }
 
-  private func parseSelfExpression(
+  func parseSelfExpression(
     startRange: SourceRange
   ) throws -> SelfExpression {
     var endLocation = startRange.end
@@ -779,7 +758,7 @@ extension Parser {
     return selfExpr
   }
 
-  private func parseHashExpression(
+  func parseHashExpression(
     startLocation: SourceLocation
   ) throws -> PrimaryExpression {
     var endLocation = getEndLocation()
@@ -822,7 +801,7 @@ extension Parser {
     }
   }
 
-  private func parseSelectorExpression(
+  func parseSelectorExpression(
     startLocation: SourceLocation
   ) throws -> SelectorExpression {
     func parseArgumentNamesAndRightParen() -> ([String], SourceLocation)? {
@@ -912,7 +891,7 @@ extension Parser {
     return selExpr
   }
 
-  private func parseCollectionLiteral(
+  func parseCollectionLiteral(
     startLocation: SourceLocation
   ) throws -> LiteralExpression {
     // empty array
@@ -941,7 +920,7 @@ extension Parser {
     }
   }
 
-  private func parseDictionaryLiteral(
+  func parseDictionaryLiteral(
     head: Expression, startLocation: SourceLocation
   ) throws -> LiteralExpression {
     var entries: [DictionaryEntry] = []
@@ -966,7 +945,7 @@ extension Parser {
     return dictExpr
   }
 
-  private func parseArrayLiteral(
+  func parseArrayLiteral(
     head: Expression, startLocation: SourceLocation
   ) throws -> LiteralExpression {
     var exprs: [Expression] = [head]
@@ -984,7 +963,7 @@ extension Parser {
     return arrayExpr
   }
 
-  private func parseInterpolatedStringLiteral(
+  func parseInterpolatedStringLiteral(
     head: String, raw: String, startLocation: SourceLocation
   ) throws -> LiteralExpression {
     var exprs: [Expression] = []
@@ -1033,7 +1012,7 @@ extension Parser {
     return strExpr
   }
 
-  private func parseClosureExpression(
+  func parseClosureExpression(
     startLocation: SourceLocation
   ) throws -> ClosureExpression {
     func parseCaptureList() -> [ClosureExpression.Signature.CaptureItem]?
