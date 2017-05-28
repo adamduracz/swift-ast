@@ -18,14 +18,14 @@ import AST
 import Lexer
 import Source
 
-public class Parser {
+open class Parser {
   let _lexer: Lexer
 
   public init(source: SourceFile) {
     _lexer = Lexer(source: source)
   }
 
-  public func parse() throws -> TopLevelDeclaration {
+  open func parse() throws -> TopLevelDeclaration {
     return try parseTopLevelDeclaration()
   }
 }

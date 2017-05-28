@@ -19,7 +19,7 @@ import AST
 import Lexer
 
 extension Parser {
-  func parseStatements() throws -> Statements {
+  open func parseStatements() throws -> Statements {
     var stmts = [Statement]()
     while true {
       switch _lexer.look().kind {
@@ -31,7 +31,7 @@ extension Parser {
     }
   }
 
-  func parseStatement() throws -> Statement {
+  open func parseStatement() throws -> Statement {
     let stmt: Statement
     let lookedRange = getLookedRange()
     switch _lexer.read([

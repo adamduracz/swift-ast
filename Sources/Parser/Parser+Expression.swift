@@ -28,7 +28,7 @@ public struct ParserExpressionConfig {
 }
 
 extension Parser {
-  private func parseExpressionList(
+  open func parseExpressionList(
     config: ParserExpressionConfig = ParserExpressionConfig()
   ) throws -> ExpressionList {
     var exprs: [Expression] = []
@@ -39,7 +39,7 @@ extension Parser {
     return exprs
   }
 
-  func parseExpression(
+  open func parseExpression(
     config: ParserExpressionConfig = ParserExpressionConfig()
   ) throws -> Expression {
     let tryKind = parseTryKind()

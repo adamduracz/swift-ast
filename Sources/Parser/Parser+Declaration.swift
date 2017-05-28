@@ -20,7 +20,7 @@ import Source
 import Diagnostic
 
 extension Parser {
-  func parseTopLevelDeclaration() throws -> TopLevelDeclaration {
+  open func parseTopLevelDeclaration() throws -> TopLevelDeclaration {
     let stmts = try parseStatements()
     let topLevelDecl = TopLevelDeclaration(statements: stmts)
     for stmt in stmts {
@@ -31,7 +31,7 @@ extension Parser {
     return topLevelDecl
   }
 
-  func parseCodeBlock() throws -> CodeBlock {
+  open func parseCodeBlock() throws -> CodeBlock {
     let startLocation = getStartLocation()
     guard _lexer.match(.leftBrace) else {
       throw _raiseFatal(.leftBraceExpected("code block"))
@@ -51,7 +51,7 @@ extension Parser {
     return codeBlock
   }
 
-  func parseDeclaration() throws -> Declaration {
+  open func parseDeclaration() throws -> Declaration {
     let startLocation = getStartLocation()
 
     let attrs = try parseAttributes()
