@@ -19,7 +19,7 @@ import Lexer
 import Source
 
 open class Parser {
-  let _lexer: Lexer
+  public let _lexer: Lexer
 
   public init(source: SourceFile) {
     _lexer = Lexer(source: source)

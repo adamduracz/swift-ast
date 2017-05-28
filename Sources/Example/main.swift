@@ -30,11 +30,35 @@ struct ExampleDiagnosticConsumer : DiagnosticConsumer {
   }
 }
 
+public class KnobsExpression : Expression {
+  public let expr: Expression
+
+  public init(expr: Expression) {
+    self.expr = expr
+  }
+
+  public var textDescription: String {
+    return "knobs: \(expr.textDescription)"
+  }
+
+  public var lexicalParent: ASTNode? = nil
+  public var sourceRange: SourceRange = .INVALID
+}
+
 class MyParser : Parser {
   override func parseExpression(
     config: ParserExpressionConfig = ParserExpressionConfig()
   ) throws -> Expression {
-    return try super.parseExpression(config: config)
+    if case .identifier(let myKeyword) = _lexer.look().kind,
+      myKeyword == "knobs",
+      _lexer.look(ahead: 1).kind == .colon
+    {
+      _lexer.advance(by: 2)
+      let expr = try super.parseExpression(config: config)
+      return KnobsExpression(expr: expr)
+    } else {
+      return try super.parseExpression(config: config)
+    }
   }
 }
 

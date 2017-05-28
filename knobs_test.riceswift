@@ -1,0 +1,5 @@
+let normal: String
+let knobs: String
+
+normal = "normal"
+knobs: knobs = "knobs"
