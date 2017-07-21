@@ -1,5 +1,5 @@
 /*
-   Copyright 2015 Ryuichi Saito, LLC and the Yanagiba project contributors
+   Copyright 2015-2017 Ryuichi Saito, LLC and the Yanagiba project contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,7 +16,14 @@
 
 // Merry Christmas 2015! -Ryuichi
 
+import Foundation
+
 public struct SourceFile {
   public let path: String
   public let content: String
+
+  public init(path: String = UUID().uuidString, content: String) {
+    self.path = path
+    self.content = content
+  }
 }
