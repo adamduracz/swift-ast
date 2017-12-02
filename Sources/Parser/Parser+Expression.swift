@@ -28,34 +28,13 @@ public struct ParserExpressionConfig {
 }
 
 extension Parser {
-  private func parseExpressionList(
-    config: ParserExpressionConfig = ParserExpressionConfig()
-  ) throws -> ExpressionList {
-    var exprs: [Expression] = []
-    repeat {
-      let expr = try parseExpression(config: config)
-      exprs.append(expr)
-    } while _lexer.match(.comma)
-    return exprs
-  }
-
-  func parseExpression(
-    config: ParserExpressionConfig = ParserExpressionConfig()
-  ) throws -> Expression {
-    let tryKind = parseTryKind()
-    let prefixExpr = try parsePrefixExpression(config: config)
-    let expr = try parseBinaryExpressions(
-      leftExpression: prefixExpr, config: config)
-    return tryKind.wrap(expr: expr)
-  }
-
-  private enum TryKind {
+  enum TryKind {
     case `try`(SourceLocation)
     case forcedTry(SourceLocation)
     case optionalTry(SourceLocation)
     case noTry
 
-    fileprivate func wrap(expr: Expression) -> Expression {
+    func wrap(expr: Expression) -> Expression {
       switch self {
       case .try(let startLocation):
         let tryOpExpr = TryOperatorExpression(kind: .try(expr))
@@ -75,7 +54,7 @@ extension Parser {
     }
   }
 
-  private func parseTryKind() -> TryKind {
+  func parseTryKind() -> TryKind {
     let startLocation = getStartLocation()
     guard _lexer.match(.try) else {
       return .noTry
@@ -89,7 +68,7 @@ extension Parser {
     }
   }
 
-  private func parseBinaryExpressions( // swift-lint:suppress(high_ncss,high_cyclomatic_complexity)
+  func parseBinaryExpressions( // swift-lint:suppress(high_ncss,high_cyclomatic_complexity)
     leftExpression: Expression, config: ParserExpressionConfig
   ) throws -> Expression {
     var resultExpr: Expression = leftExpression
@@ -262,7 +241,7 @@ extension Parser {
     return resultExpr
   }
 
-  private func parsePrefixExpression(
+  func parsePrefixExpression(
     config: ParserExpressionConfig
   ) throws -> Expression {
     let startLocation = getStartLocation()
@@ -286,7 +265,7 @@ extension Parser {
     }
   }
 
-  private func parsePostfixExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
+  func parsePostfixExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
     config: ParserExpressionConfig
   ) throws -> PostfixExpression {
     var resultExpr: PostfixExpression = try parsePrimaryExpression()
@@ -383,7 +362,7 @@ extension Parser {
     return resultExpr
   }
 
-  private func parseFunctionCallExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
+  func parseFunctionCallExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
     postfixExpression expr: PostfixExpression, config: ParserExpressionConfig
   ) throws -> PostfixExpression { // swift-lint:suppress(nested_code_block_depth)
     func parseArgumentExpr(op: Operator) -> Expression? {
@@ -533,7 +512,7 @@ extension Parser {
     }
   }
 
-  private func parseArgumentNames() throws -> ([String], SourceRange)? {
+  func parseArgumentNames() throws -> ([String], SourceRange)? {
     guard isArgumentNames() else {
       return nil
     }
@@ -556,7 +535,7 @@ extension Parser {
     return (argumentNames, SourceRange(start: startLocation, end: endLocation))
   }
 
-  private func parsePostfixMemberExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
+  func parsePostfixMemberExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
     postfixExpression expr: PostfixExpression
   ) throws -> PostfixExpression {
     func getTupleIndex() -> (Int, Int)? {
@@ -652,7 +631,7 @@ extension Parser {
     }
   }
 
-  private func parsePrimaryExpression() throws -> PrimaryExpression { /*
+  func parsePrimaryExpression() throws -> PrimaryExpression { /*
     swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
     */
     let lookedRange = getLookedRange()
@@ -757,7 +736,7 @@ extension Parser {
    So when the condition meets,
    this returns a `ParenthesizedExpression` accordingly.
    */
-  private func parseParenthesizedExpression(
+  func parseParenthesizedExpression(
     startLocation: SourceLocation
   ) throws -> PrimaryExpression {
     var endLocation = getEndLocation()
@@ -803,7 +782,7 @@ extension Parser {
     return tupleExpr
   }
 
-  private func parseSubscriptArguments() throws -> [SubscriptArgument] {
+  func parseSubscriptArguments() throws -> [SubscriptArgument] {
     var arguments: [SubscriptArgument] = []
 
     repeat {
@@ -824,7 +803,7 @@ extension Parser {
     return arguments
   }
 
-  private func parseSuperclassExpression(
+  func parseSuperclassExpression(
     startRange: SourceRange
   ) throws -> SuperclassExpression {
     var endLocation = startRange.end
@@ -854,7 +833,7 @@ extension Parser {
     return superExpr
   }
 
-  private func parseSelfExpression(
+  func parseSelfExpression(
     startRange: SourceRange
   ) throws -> SelfExpression {
     var endLocation = startRange.end
@@ -884,7 +863,7 @@ extension Parser {
     return selfExpr
   }
 
-  private func parseKeyPathExpression(
+  func parseKeyPathExpression(
     startLocation: SourceLocation
   ) throws -> KeyPathExpression {
     var endLocation = getEndLocation()
@@ -912,7 +891,7 @@ extension Parser {
     return keyPathExpr
   }
 
-  private func parseHashExpression(
+  func parseHashExpression(
     startLocation: SourceLocation
   ) throws -> PrimaryExpression {
     var endLocation = getEndLocation()
@@ -955,7 +934,7 @@ extension Parser {
     }
   }
 
-  private func parseSelectorExpression( /*
+  func parseSelectorExpression( /*
     swift-lint:suppress(high_cyclomatic_complexity,high_npath_complexity,high_ncss)
     */
     startLocation: SourceLocation
@@ -1047,7 +1026,7 @@ extension Parser {
     return selExpr
   }
 
-  private func parseCollectionLiteral(
+  func parseCollectionLiteral(
     startLocation: SourceLocation
   ) throws -> LiteralExpression {
     // empty array
@@ -1076,7 +1055,7 @@ extension Parser {
     }
   }
 
-  private func parseDictionaryLiteral(
+  func parseDictionaryLiteral(
     head: Expression, startLocation: SourceLocation
   ) throws -> LiteralExpression {
     var entries: [DictionaryEntry] = []
@@ -1101,7 +1080,7 @@ extension Parser {
     return dictExpr
   }
 
-  private func parseArrayLiteral(
+  func parseArrayLiteral(
     head: Expression, startLocation: SourceLocation
   ) throws -> LiteralExpression {
     var exprs: [Expression] = [head]
@@ -1119,7 +1098,7 @@ extension Parser {
     return arrayExpr
   }
 
-  private func parseInterpolatedStringLiteral( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
+  func parseInterpolatedStringLiteral( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
     head: String, raw: String, startLocation: SourceLocation
   ) throws -> LiteralExpression { // swift-lint:suppress(nested_code_block_depth)
     func caliberateExpressions(_ exprs: [Expression]) throws -> [Expression] { // swift-lint:suppress(nested_code_block_depth,long_line)
@@ -1236,7 +1215,7 @@ extension Parser {
     return strExpr
   }
 
-  private func parseClosureExpression( /*
+  func parseClosureExpression( /*
     swift-lint:suppress(high_cyclomatic_complexity,high_npath_complexity,high_ncss)
     */
     startLocation: SourceLocation
