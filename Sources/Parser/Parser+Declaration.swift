@@ -849,7 +849,7 @@ extension Parser {
     return enumDecl
   }
 
-  func parseParameterClause() throws -> ([FunctionSignature.Parameter], SourceRange) { /*
+  public func parseParameterClause() throws -> ([FunctionSignature.Parameter], SourceRange) { /*
     swift-lint:suppress(high_ncss)
     */
     func parseParameter() throws -> FunctionSignature.Parameter {
