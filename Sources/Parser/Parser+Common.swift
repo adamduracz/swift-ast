@@ -19,7 +19,7 @@ import AST
 import Lexer
 
 extension Parser {
-  func parseFunctionResult() throws -> FunctionResult? {
+  public func parseFunctionResult() throws -> FunctionResult? {
     guard _lexer.match(.arrow) else { return nil }
 
     let attrs = try parseAttributes()
@@ -27,7 +27,7 @@ extension Parser {
     return FunctionResult(attributes: attrs, type: type)
   }
 
-  func parseThrowsKind() -> (ThrowsKind, SourceLocation?) {
+  public func parseThrowsKind() -> (ThrowsKind, SourceLocation?) {
     let endLocation = getEndLocation()
     switch _lexer.read([.throws, .rethrows]) {
     case .throws:
@@ -39,7 +39,7 @@ extension Parser {
     }
   }
 
-  func parseVerifiedOperator(
+  public func parseVerifiedOperator(
     againstModifier kind: DeclarationModifier?
   ) -> Operator? {
     var verifiedOperator: Operator?
@@ -81,7 +81,7 @@ extension Parser {
     return op
   }
 
-  func parseShebang() -> Shebang? {
+  public func parseShebang() -> Shebang? {
     guard _lexer.look().kind == .hash else {
       return nil
     }

@@ -17,16 +17,16 @@
 import Diagnostic
 
 extension Parser {
-  func _raiseFatal(_ kind: ParserErrorKind) -> Error {
+  public func _raiseFatal(_ kind: ParserErrorKind) -> Error {
     return _diagnosticPool.appendFatal(
       kind: kind, sourceLocatable: _lexer.look())
   }
 
-  func _raiseError(_ kind: ParserErrorKind) throws {
+  public func _raiseError(_ kind: ParserErrorKind) throws {
     try _diagnosticPool.appendError(kind: kind, sourceLocatable: _lexer.look())
   }
 
-  func _raiseWarning(_ kind: ParserErrorKind) throws {
+  public func _raiseWarning(_ kind: ParserErrorKind) throws {
     try _diagnosticPool.appendWarning(kind: kind, sourceLocatable: _lexer.look())
   }
 

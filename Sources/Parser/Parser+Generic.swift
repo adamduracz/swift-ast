@@ -19,7 +19,7 @@ import AST
 import Lexer
 
 extension Parser {
-  func parseGenericParameterClause() throws -> GenericParameterClause? {
+  public func parseGenericParameterClause() throws -> GenericParameterClause? {
     guard _matchLeftChevron() else {
       return nil
     }
@@ -67,7 +67,7 @@ extension Parser {
     }
   }
 
-  func parseGenericWhereClause() throws -> GenericWhereClause? {
+  public func parseGenericWhereClause() throws -> GenericWhereClause? {
     guard _lexer.match(.where) else {
       return nil
     }
@@ -119,7 +119,7 @@ extension Parser {
     }
   }
 
-  func parseGenericArgumentClause() -> GenericArgumentClause? {
+  public func parseGenericArgumentClause() -> GenericArgumentClause? {
     let openChevronCp = _lexer.checkPoint()
     let openChevronDiagnosticCp = _diagnosticPool.checkPoint()
 
