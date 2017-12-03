@@ -16,7 +16,7 @@
 
 import Source
 
-public class ASTNode : LocatableNode {
+open class ASTNode : LocatableNode {
   public private(set) weak var lexicalParent: ASTNode?
 
   public func setLexicalParent(_ node: ASTNode) {

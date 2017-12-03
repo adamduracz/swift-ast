@@ -16,10 +16,10 @@
 
 import Source
 
-public class LocatableNode {
+open class LocatableNode {
   public private(set) var sourceRange: SourceRange = .INVALID
 
-  public var textDescription: String {
+  open var textDescription: String {
     guard sourceRange.isValid else {
       return "<<invalid>>"
     }
