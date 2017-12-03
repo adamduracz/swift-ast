@@ -30,7 +30,7 @@ extension Parser {
     try _diagnosticPool.appendWarning(kind: kind, sourceLocatable: _lexer.look())
   }
 
-  var _diagnosticPool: DiagnosticPool {
+  public var _diagnosticPool: DiagnosticPool {
     return .shared
   }
 }

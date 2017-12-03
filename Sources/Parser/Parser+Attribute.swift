@@ -18,7 +18,7 @@ import AST
 import Lexer
 
 extension Parser {
-  func parseAttributes() throws -> Attributes {
+  public func parseAttributes() throws -> Attributes {
     var attrs: Attributes = []
     while _lexer.match(.at) {
       let attr = try parseAttribute()

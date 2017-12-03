@@ -402,7 +402,7 @@ extension Parser {
     return funcType
   }
 
-  func parseTypeInheritanceClause() throws -> TypeInheritanceClause? {
+  public func parseTypeInheritanceClause() throws -> TypeInheritanceClause? {
     guard _lexer.match(.colon) else {
       return nil
     }

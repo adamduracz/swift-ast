@@ -18,7 +18,7 @@ import AST
 import Lexer
 
 extension Parser {
-  func parseModifiers() -> [DeclarationModifier] {
+  public func parseModifiers() -> [DeclarationModifier] {
     var modifiers: [DeclarationModifier] = []
     while let modifier = parseModifier() {
       modifiers.append(modifier)
