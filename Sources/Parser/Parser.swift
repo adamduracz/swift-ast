@@ -146,6 +146,39 @@ open class Parser {
     return stmt
   }
 
+  open func parseIfStatement(
+    startLocation: SourceLocation
+  ) throws -> Statement {
+    let conditionList = try parseConditionList()
+    let codeBlock = try parseCodeBlock()
+    guard _lexer.match(.else) else {
+      let ifStmt = IfStatement(
+        conditionList: conditionList, codeBlock: codeBlock)
+      ifStmt.setSourceRange(startLocation, codeBlock.sourceRange.end) // Note: this line is crafted by Renko 😂
+      return ifStmt
+    }
+
+    let nestedStartLocation = getStartLocation()
+    if _lexer.match(.if),
+      let elseIfStmt = try parseIfStatement(startLocation: nestedStartLocation) as? IfStatement
+    {
+      let ifStmt = IfStatement(
+        conditionList: conditionList,
+        codeBlock: codeBlock,
+        elseClause: .elseif(elseIfStmt))
+      ifStmt.setSourceRange(startLocation, elseIfStmt.sourceRange.end)
+      return ifStmt
+    }
+
+    let elseCodeBlock = try parseCodeBlock()
+    let ifStmt = IfStatement(
+      conditionList: conditionList,
+      codeBlock: codeBlock,
+      elseClause: .else(elseCodeBlock))
+    ifStmt.setSourceRange(startLocation, elseCodeBlock.sourceRange.end)
+    return ifStmt
+  }
+
   open func parseDeclaration() throws -> Declaration { /*
     swift-lint:suppress(high_cyclomatic_complexity)
     */
