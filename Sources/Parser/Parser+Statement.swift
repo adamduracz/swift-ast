@@ -319,7 +319,7 @@ extension Parser {
     return whileStmt
   }
 
-  func parseConditionList() throws -> ConditionList {
+  public func parseConditionList() throws -> ConditionList {
     var conditionList: ConditionList = []
     repeat {
       let condition = try parseCondition()
