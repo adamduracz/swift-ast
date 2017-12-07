@@ -226,7 +226,7 @@ extension Parser {
     return doStmt
   }
 
-  func parseSwitchStatement(
+  public func parseSwitchStatement(
     startLocation: SourceLocation
   ) throws -> SwitchStatement {
     let expr = try parseExpression(config: noTrailingConfig)
