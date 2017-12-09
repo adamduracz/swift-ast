@@ -19,7 +19,7 @@ import Lexer
 import Source
 
 extension Parser {
-  func parseTypeAnnotation() throws -> TypeAnnotation? {
+  public func parseTypeAnnotation() throws -> TypeAnnotation? {
     let startLocation = getStartLocation()
     guard _lexer.match(.colon) else {
       return nil
