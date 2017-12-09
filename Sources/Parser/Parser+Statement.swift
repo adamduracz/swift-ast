@@ -106,7 +106,7 @@ extension Parser {
     }
   }
 
-  func parseCompilerControlStatement( // swift-lint:suppress(high_cyclomatic_complexity)
+  public func parseCompilerControlStatement( // swift-lint:suppress(high_cyclomatic_complexity)
     startLocation: SourceLocation
   ) throws -> CompilerControlStatement {
     var kind: CompilerControlStatement.Kind
