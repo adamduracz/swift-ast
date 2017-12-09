@@ -368,6 +368,125 @@ open class Parser {
     return funcDecl
   }
 
+  open func parseClassDeclaration(
+    withAttributes attrs: Attributes,
+    modifiers: DeclarationModifiers,
+    startLocation: SourceLocation
+  ) throws -> ClassDeclaration {
+    var accessLevelModifier: AccessLevelModifier?
+    var isFinal = false
+    if modifiers.count == 1, case .accessLevel(let modifier) = modifiers[0] {
+      accessLevelModifier = modifier
+    } else if modifiers.count == 1, modifiers[0] == .final {
+      isFinal = true
+    } else if modifiers.count == 2, modifiers[0] == .final,
+      case .accessLevel(let modifier) = modifiers[1]
+    {
+      accessLevelModifier = modifier
+      isFinal = true
+    } else if modifiers.count == 2,
+      case .accessLevel(let modifier) = modifiers[0],
+      modifiers[1] == .final
+    {
+      accessLevelModifier = modifier
+      isFinal = true
+    }
+
+    guard let name = _lexer.look().kind.structName else {
+      throw _raiseFatal(.missingClassName)
+    }
+    _lexer.advance()
+
+    let genericParameterClause = try parseGenericParameterClause()
+    let typeInheritanceClause = try parseTypeInheritanceClause()
+    let genericWhereClause = try parseGenericWhereClause()
+
+    guard _lexer.match(.leftBrace) else {
+      throw _raiseFatal(.leftBraceExpected("class declaration body"))
+    }
+
+    var endLocation = getEndLocation()
+    var members: [ClassDeclaration.Member] = []
+    while !_lexer.match(.rightBrace) {
+      let hashStartLocation = getStartLocation()
+      if _lexer.match(.hash) {
+        let compCtrlStmt =
+          try parseCompilerControlStatement(startLocation: hashStartLocation)
+        members.append(.compilerControl(compCtrlStmt))
+      } else {
+        let decl = try parseDeclaration()
+        members.append(.declaration(decl))
+      }
+      endLocation = getEndLocation()
+
+      removeTrailingSemicolons()
+    }
+
+    let classDecl = ClassDeclaration(
+      attributes: attrs,
+      accessLevelModifier: accessLevelModifier,
+      isFinal: isFinal,
+      name: name,
+      genericParameterClause: genericParameterClause,
+      typeInheritanceClause: typeInheritanceClause,
+      genericWhereClause: genericWhereClause,
+      members: members)
+    classDecl.setSourceRange(startLocation, endLocation)
+    return classDecl
+  }
+
+  open func parseStructDeclaration(
+    withAttributes attrs: Attributes,
+    modifiers: DeclarationModifiers,
+    startLocation: SourceLocation
+  ) throws -> StructDeclaration {
+    var accessLevelModifier: AccessLevelModifier?
+    if modifiers.count == 1, case .accessLevel(let modifier) = modifiers[0] {
+      accessLevelModifier = modifier
+    }
+
+    guard let name = _lexer.look().kind.structName else {
+      throw _raiseFatal(.missingStructName)
+    }
+    _lexer.advance()
+
+    let genericParameterClause = try parseGenericParameterClause()
+    let typeInheritanceClause = try parseTypeInheritanceClause()
+    let genericWhereClause = try parseGenericWhereClause()
+
+    guard _lexer.match(.leftBrace) else {
+      throw _raiseFatal(.leftBraceExpected("struct declaration body"))
+    }
+
+    var endLocation = getEndLocation()
+    var members: [StructDeclaration.Member] = []
+    while !_lexer.match(.rightBrace) {
+      let hashStartLocation = getStartLocation()
+      if _lexer.match(.hash) {
+        let compCtrlStmt =
+          try parseCompilerControlStatement(startLocation: hashStartLocation)
+        members.append(.compilerControl(compCtrlStmt))
+      } else {
+        let decl = try parseDeclaration()
+        members.append(.declaration(decl))
+      }
+      endLocation = getEndLocation()
+
+      removeTrailingSemicolons()
+    }
+
+    let structDecl = StructDeclaration(
+      attributes: attrs,
+      accessLevelModifier: accessLevelModifier,
+      name: name,
+      genericParameterClause: genericParameterClause,
+      typeInheritanceClause: typeInheritanceClause,
+      genericWhereClause: genericWhereClause,
+      members: members)
+    structDecl.setSourceRange(startLocation, endLocation)
+    return structDecl
+  }
+
   open func parseExpressionList(
     config: ParserExpressionConfig = ParserExpressionConfig()
   ) throws -> ExpressionList {
