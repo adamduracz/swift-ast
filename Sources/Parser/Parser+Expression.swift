@@ -640,7 +640,7 @@ extension Parser {
     }
   }
 
-  func parsePrimaryExpression() throws -> PrimaryExpression { /*
+  public func parsePrimaryExpression() throws -> PrimaryExpression { /*
     swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
     */
     let lookedRange = getLookedRange()
