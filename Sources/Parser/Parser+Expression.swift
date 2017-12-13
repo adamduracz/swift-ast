@@ -265,13 +265,22 @@ extension Parser {
     }
   }
 
-  func parsePostfixExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
+  func parsePostfixExpression(
     config: ParserExpressionConfig
   ) throws -> PostfixExpression {
     if let listComprehensionExpr = try parseListComprehension() {
       return listComprehensionExpr
     }
-    var resultExpr: PostfixExpression = try parsePrimaryExpression()
+
+    let primaryExpr = try parsePrimaryExpression()
+    return try parsePostfixExpression(with: primaryExpr, config: config)
+  }
+
+  public func parsePostfixExpression( // swift-lint:suppress(high_cyclomatic_complexity,high_ncss)
+    with leftExpression: PostfixExpression,
+    config: ParserExpressionConfig
+  ) throws -> PostfixExpression {
+    var resultExpr = leftExpression
 
     let examine: () -> (Bool, Token.Kind) = {
       let allQnE = self.splitTrailingExclaimsAndQuestions()
