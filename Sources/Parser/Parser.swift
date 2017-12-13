@@ -508,4 +508,8 @@ open class Parser {
     return tryKind.wrap(expr: expr)
   }
 
+  open func parseListComprehension() throws -> PostfixExpression? {
+    return nil
+  }
+
 }
