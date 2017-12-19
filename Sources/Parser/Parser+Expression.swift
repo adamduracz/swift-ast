@@ -979,6 +979,10 @@ extension Parser {
       let magicExpr = LiteralExpression(kind: .staticString("TODO", "#function")) // TODO: assign correct value
       magicExpr.setSourceRange(startLocation, endLocation)
       return magicExpr
+    case "dsohandle":
+      let magicExpr = LiteralExpression(kind: .staticString("TODO", "#dsohandle")) // TODO: assign correct value
+      magicExpr.setSourceRange(startLocation, endLocation)
+      return magicExpr
     case "selector":
       return try parseSelectorExpression(startLocation: startLocation)
     case "keyPath":
