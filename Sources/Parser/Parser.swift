@@ -41,14 +41,10 @@ open class Parser {
 
   open func parseCodeBlock() throws -> CodeBlock {
     let startLocation = getStartLocation()
-    guard _lexer.match(.leftBrace) else {
-      throw _raiseFatal(.leftBraceExpected("code block"))
-    }
+    try match(.leftBrace, orFatal: .leftBraceExpected("code block"))
     let stmts = try parseStatements()
     let endLocation = getEndLocation()
-    guard _lexer.match(.rightBrace) else {
-      throw _raiseFatal(.rightBraceExpected("code block"))
-    }
+    try match(.rightBrace, orFatal: .rightBraceExpected("code block"))
     let codeBlock = CodeBlock(statements: stmts)
     codeBlock.setSourceRange(startLocation, endLocation)
     return codeBlock
@@ -109,13 +105,12 @@ open class Parser {
       stmt = try parseDeferStatement(startLocation: lookedRange.start)
     case .do:
       stmt = try parseDoStatement(startLocation: lookedRange.start)
-    case let .identifier(name):
+    case let .identifier(name, _):
       if _lexer.look(ahead: 1).kind == .colon &&
         [Token.Kind.for, .while, .repeat, .if, .switch, .do].contains(_lexer.look(ahead: 2).kind)
       {
         _lexer.advance(by: 2)
-        stmt = try parseLabeledStatement(
-          withLabelName: name, startLocation: lookedRange.start)
+        stmt = try parseLabeledStatement(withLabelName: .name(name), startLocation: lookedRange.start)
       } else if name == "precedencegroup" {
         stmt = try parseDeclaration()
       } else {
@@ -138,9 +133,7 @@ open class Parser {
         stmt = try parseExpression()
       }
     }
-    if !_lexer.match([.semicolon, .lineFeed, .eof]) &&
-      _lexer.look().kind != .rightBrace
-    {
+    if !_lexer.match([.semicolon, .lineFeed, .eof]) && _lexer.look().kind != .rightBrace {
       try _raiseError(.statementSameLineWithoutSemicolon)
     }
     return stmt
@@ -222,9 +215,7 @@ open class Parser {
         isIndirect: false,
         startLocation: startLocation)
     case .indirect:
-      guard _lexer.match(.enum) else {
-        throw _raiseFatal(.enumExpectedAfterIndirect)
-      }
+      try match(.enum, orFatal: .enumExpectedAfterIndirect)
       return try parseEnumDeclaration(
         withAttributes: attrs,
         modifiers: modifiers,
@@ -274,7 +265,7 @@ open class Parser {
       // try parsing precedence group declaration
       if attrs.isEmpty,
         modifiers.isEmpty,
-        case .identifier(let keyword) = _lexer.look().kind,
+        case .identifier(let keyword, false) = _lexer.look().kind,
         keyword == "precedencegroup"
       {
         _lexer.advance()
@@ -307,10 +298,10 @@ open class Parser {
       }
 
       if let op = parseVerifiedOperator(againstModifier: kind) {
-        return op
+        return .name(op)
       }
 
-      guard let name = _lexer.readNamedIdentifier() else {
+      guard let name = readNamedIdentifier() else {
         throw _raiseFatal(.missingFunctionName)
       }
       return name
@@ -379,20 +370,15 @@ open class Parser {
       accessLevelModifier = modifier
     } else if modifiers.count == 1, modifiers[0] == .final {
       isFinal = true
-    } else if modifiers.count == 2, modifiers[0] == .final,
-      case .accessLevel(let modifier) = modifiers[1]
-    {
+    } else if modifiers.count == 2, modifiers[0] == .final, case .accessLevel(let modifier) = modifiers[1] {
       accessLevelModifier = modifier
       isFinal = true
-    } else if modifiers.count == 2,
-      case .accessLevel(let modifier) = modifiers[0],
-      modifiers[1] == .final
-    {
+    } else if modifiers.count == 2, case .accessLevel(let modifier) = modifiers[0], modifiers[1] == .final {
       accessLevelModifier = modifier
       isFinal = true
     }
 
-    guard let name = _lexer.look().kind.structName else {
+    guard let name = _lexer.look().kind.structName?.id else {
       throw _raiseFatal(.missingClassName)
     }
     _lexer.advance()
@@ -401,17 +387,14 @@ open class Parser {
     let typeInheritanceClause = try parseTypeInheritanceClause()
     let genericWhereClause = try parseGenericWhereClause()
 
-    guard _lexer.match(.leftBrace) else {
-      throw _raiseFatal(.leftBraceExpected("class declaration body"))
-    }
+    try match(.leftBrace, orFatal: .leftBraceExpected("class declaration body"))
 
     var endLocation = getEndLocation()
     var members: [ClassDeclaration.Member] = []
     while !_lexer.match(.rightBrace) {
       let hashStartLocation = getStartLocation()
       if _lexer.match(.hash) {
-        let compCtrlStmt =
-          try parseCompilerControlStatement(startLocation: hashStartLocation)
+        let compCtrlStmt = try parseCompilerControlStatement(startLocation: hashStartLocation)
         members.append(.compilerControl(compCtrlStmt))
       } else {
         let decl = try parseDeclaration()
@@ -445,7 +428,7 @@ open class Parser {
       accessLevelModifier = modifier
     }
 
-    guard let name = _lexer.look().kind.structName else {
+    guard let name = _lexer.look().kind.structName?.id else {
       throw _raiseFatal(.missingStructName)
     }
     _lexer.advance()
@@ -454,17 +437,14 @@ open class Parser {
     let typeInheritanceClause = try parseTypeInheritanceClause()
     let genericWhereClause = try parseGenericWhereClause()
 
-    guard _lexer.match(.leftBrace) else {
-      throw _raiseFatal(.leftBraceExpected("struct declaration body"))
-    }
+    try match(.leftBrace, orFatal: .leftBraceExpected("struct declaration body"))
 
     var endLocation = getEndLocation()
     var members: [StructDeclaration.Member] = []
     while !_lexer.match(.rightBrace) {
       let hashStartLocation = getStartLocation()
       if _lexer.match(.hash) {
-        let compCtrlStmt =
-          try parseCompilerControlStatement(startLocation: hashStartLocation)
+        let compCtrlStmt = try parseCompilerControlStatement(startLocation: hashStartLocation)
         members.append(.compilerControl(compCtrlStmt))
       } else {
         let decl = try parseDeclaration()

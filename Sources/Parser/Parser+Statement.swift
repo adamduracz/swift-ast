@@ -1,5 +1,5 @@
 /*
-   Copyright 2016-2017 Ryuichi Laboratories and the Yanagiba project contributors
+   Copyright 2016-2018 Ryuichi Laboratories and the Yanagiba project contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,9 +19,7 @@ import AST
 import Lexer
 
 extension Parser {
-  func parseThrowStatement(
-    startLocation: SourceLocation
-  ) throws -> ThrowStatement {
+  func parseThrowStatement(startLocation: SourceLocation) throws -> ThrowStatement {
     let expr = try parseExpression()
     let throwStmt = ThrowStatement(expression: expr)
     throwStmt.setSourceRange(startLocation, expr.sourceRange.end)
@@ -78,9 +76,7 @@ extension Parser {
 
   func parseContinueStatement(startRange: SourceRange) -> ContinueStatement {
     let endLocation = getEndLocation()
-    if !_lexer.lookLineFeed(),
-      case .identifier(let name) = _lexer.read(.dummyIdentifier)
-    {
+    if !_lexer.lookLineFeed(), let name = readNamedIdentifier() {
       let continueStmt = ContinueStatement(labelName: name)
       continueStmt.setSourceRange(startRange.start, endLocation)
       return continueStmt
@@ -93,9 +89,7 @@ extension Parser {
 
   func parseBreakStatement(startRange: SourceRange) -> BreakStatement {
     let endLocation = getEndLocation()
-    if !_lexer.lookLineFeed(),
-      case .identifier(let name) = _lexer.read(.dummyIdentifier)
-    {
+    if !_lexer.lookLineFeed(), let name = readNamedIdentifier() {
       let breakStmt = BreakStatement(labelName: name)
       breakStmt.setSourceRange(startRange.start, endLocation)
       return breakStmt
@@ -113,15 +107,15 @@ extension Parser {
     var endLocation = getEndLocation()
     switch _lexer.read([.if, .dummyIdentifier, .else]) {
     case .if:
-      let condition = _lexer.readUntilEOL()
+      let condition = readUntilEOL()
       kind = .if(condition)
       for _ in 0..<condition.count {
         endLocation = endLocation.nextColumn
       }
-    case .identifier(let id):
+    case .identifier(let id, false):
       switch id {
       case "elseif":
-        let condition = _lexer.readUntilEOL()
+        let condition = readUntilEOL()
         kind = .elseif(condition)
         for _ in 0..<condition.count {
           endLocation = endLocation.nextColumn
@@ -133,16 +127,16 @@ extension Parser {
           throw _raiseFatal(.expectedOpenParenSourceLocation)
         }
         if _lexer.match(.rightParen) {
-          _lexer.readUntilEOL()
+          readUntilEOL()
           kind = .sourceLocation(nil, nil)
         }
         var fileName: String?
         var lineNumber: Int?
-        if _lexer.read(.dummyIdentifier) == .identifier("file"),
+        if _lexer.read(.dummyIdentifier) == .identifier("file", false),
           _lexer.match(.colon),
           case let .staticStringLiteral(name, _) = _lexer.read(.dummyStaticStringLiteral),
           _lexer.match(.comma),
-          _lexer.read(.dummyIdentifier) == .identifier("line"),
+          _lexer.read(.dummyIdentifier) == .identifier("line", false),
           _lexer.match(.colon),
           case let .integerLiteral(line, raw) = _lexer.read(.dummyIntegerLiteral),
           raw.containOnlyPositiveDecimals,
@@ -151,7 +145,7 @@ extension Parser {
           fileName = name
           lineNumber = Int(line)
         }
-        _lexer.readUntilEOL()
+        readUntilEOL()
         kind = .sourceLocation(fileName, lineNumber)
       default:
         throw _raiseFatal(.expectedValidCompilerCtrlKeyword)
@@ -167,7 +161,7 @@ extension Parser {
   }
 
   func parseLabeledStatement(
-    withLabelName name: String, startLocation: SourceLocation
+    withLabelName name: Identifier, startLocation: SourceLocation
   ) throws -> LabeledStatement {
     let stmt: Statement
     let stmtStartLocation = getStartLocation()
@@ -370,7 +364,7 @@ extension Parser {
   }
 
   func parseAvailabilityCondition() throws -> Condition {
-    guard case .identifier("available") = _lexer.look().kind else {
+    guard case .identifier("available", false) = _lexer.look().kind else {
       throw _raiseFatal(.expectedAvailableKeyword)
     }
     _lexer.advance()
@@ -389,7 +383,7 @@ extension Parser {
       switch _lexer.read([.dummyIdentifier, .dummyBinaryOperator]) {
       case .binaryOperator("*"):
         arguments.append(.all)
-      case .identifier(let platformName)
+      case .identifier(let platformName, false)
         where supportedPlatforms.contains(platformName):
         // TODO: this entire switch stmt is very ugly, and the logic is poorly handled, need to rewrite
         switch _lexer.read([

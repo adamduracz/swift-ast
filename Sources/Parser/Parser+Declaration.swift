@@ -1,5 +1,5 @@
 /*
-   Copyright 2016-2017 Ryuichi Laboratories and the Yanagiba project contributors
+   Copyright 2016-2018 Ryuichi Laboratories and the Yanagiba project contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ extension Parser {
     func parsePropertyMember(
       withAttributes attrs: Attributes, modifiers: DeclarationModifiers
     ) throws -> ProtocolDeclaration.Member {
-      guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+      guard let name = readNamedIdentifier() else {
         throw _raiseFatal(.missingPropertyMemberName)
       }
       guard let typeAnnotation = try parseTypeAnnotation() else {
@@ -134,7 +134,7 @@ extension Parser {
         accessLevelModifier = modifier
       }
 
-      guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+      guard let name = readNamedIdentifier() else {
         throw _raiseFatal(.missingProtocolAssociatedTypeName)
       }
 
@@ -180,7 +180,7 @@ extension Parser {
           try parseCompilerControlStatement(startLocation: startLocation)
         return .compilerControl(compCtrlStmt)
       default:
-        if _lexer.look().kind == .identifier("associatedtype") {
+        if _lexer.look().kind == .identifier("associatedtype", false) {
           _lexer.advance()
           return try parseAssociatedType(
             withAttributes: attrs, modifiers: modifiers)
@@ -194,7 +194,7 @@ extension Parser {
       accessLevelModifier = modifier
     }
 
-    guard let name = _lexer.look().kind.structName else {
+    guard let name = _lexer.look().kind.structName?.id else {
       throw _raiseFatal(.missingProtocolName)
     }
     _lexer.advance()
@@ -238,7 +238,7 @@ extension Parser {
       ) throws -> IdentifierList {
         var ids: [Identifier] = []
         repeat {
-          guard case .identifier(let id) = _lexer.read(.dummyIdentifier) else {
+          guard let id = readNamedIdentifier() else {
             throw _raiseFatal(.missingPrecedenceGroupRelation(attributeName))
           }
           ids.append(id)
@@ -247,7 +247,7 @@ extension Parser {
       }
 
       switch _lexer.read([.dummyIdentifier, .associativity]) {
-      case .identifier(let attributeName):
+      case .identifier(let attributeName, false):
         switch attributeName {
         case "higherThan":
           try consumeColon()
@@ -285,7 +285,7 @@ extension Parser {
       }
     }
 
-    guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+    guard let name = readNamedIdentifier() else {
       throw _raiseFatal(.missingPrecedenceName)
     }
 
@@ -336,7 +336,7 @@ extension Parser {
       var id: Identifier?
       if _lexer.match(.colon) {
         endLocation = getEndLocation()
-        guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+        guard let name = readNamedIdentifier() else {
           throw _raiseFatal(.expectedOperatorNameAfterInfixOperator)
         }
         id = name
@@ -431,7 +431,7 @@ extension Parser {
     }
 
     let idTypeStartRange = getLookedRange()
-    guard let name = _lexer.look().kind.structName else {
+    guard let name = _lexer.look().kind.structName?.id else {
       throw _raiseFatal(.missingExtensionName)
     }
     _lexer.advance()
@@ -633,7 +633,7 @@ extension Parser {
       )
       var caseComponents: [CaseComponent] = []
       repeat {
-        guard let s = _lexer.readNamedIdentifier() else {
+        guard let s = readNamedIdentifier() else {
           throw _raiseFatal(.expectedCaseName)
         }
         let startLocation = getStartLocation()
@@ -693,7 +693,7 @@ extension Parser {
       accessLevelModifier = modifier
     }
 
-    guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+    guard let name = readNamedIdentifier() else {
       throw _raiseFatal(.missingEnumName)
     }
 
@@ -737,15 +737,15 @@ extension Parser {
       var externalName: Identifier?
       var internalName: Identifier?
       if _lexer.match(.underscore) {
-        if let name = _lexer.readNamedIdentifier() {
-          externalName = "_"
+        if let name = readNamedIdentifier() {
+          externalName = .wildcard
           internalName = name
         } else {
-          externalName = "_"
-          internalName = ""
+          externalName = .wildcard
+          internalName = .name("")
         }
-      } else if let firstName = _lexer.readNamedIdentifier() {
-        if let secondName = _lexer.readNamedIdentifierOrWildcard() {
+      } else if let firstName = readNamedIdentifier() {
+        if let secondName = readNamedIdentifierOrWildcard() {
           externalName = firstName
           internalName = secondName
         } else {
@@ -801,9 +801,7 @@ extension Parser {
     } while _lexer.match(.comma)
 
     endLocation = getEndLocation()
-    guard _lexer.match(.rightParen) else {
-      throw _raiseFatal(.expectedParameterCloseParenthesis)
-    }
+    try match(.rightParen, orFatal: .expectedParameterCloseParenthesis)
     return (params, SourceRange(start: startLocation, end: endLocation))
   }
 
@@ -816,7 +814,7 @@ extension Parser {
     if modifiers.count == 1, case .accessLevel(let modifier) = modifiers[0] {
       accessLevelModifier = modifier
     }
-    guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+    guard let name = readNamedIdentifier() else {
       throw _raiseFatal(.missingTypealiasName)
     }
     let genericParameterClause = try parseGenericParameterClause()
@@ -940,9 +938,9 @@ extension Parser {
     (WillSetDidSetBlock, SourceLocation)
   {
     func parseSet(_ accessorType: String) throws -> (Identifier?, CodeBlock) {
-      var setterName: String?
+      var setterName: Identifier?
       if _lexer.match(.leftParen) {
-        guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+        guard let name = readNamedIdentifier() else {
           throw _raiseFatal(.expectedAccesorName(accessorType))
         }
         guard _lexer.match(.rightParen) else {
@@ -1026,12 +1024,10 @@ extension Parser {
         attributes: attrs, mutationModifier: modifier, codeBlock: codeBlock)
     }
 
-    func parseSetter(
-      attrs: Attributes, modifier: MutationModifier?
-    ) throws -> GetterSetterBlock.SetterClause {
-      var setterName: String?
+    func parseSetter(attrs: Attributes, modifier: MutationModifier?) throws -> GetterSetterBlock.SetterClause {
+      var setterName: Identifier?
       if _lexer.match(.leftParen) {
-        guard case .identifier(let name) = _lexer.read(.dummyIdentifier) else {
+        guard let name = readNamedIdentifier() else {
           throw _raiseFatal(.expectedAccesorName("setter"))
         }
         guard _lexer.match(.rightParen) else {
@@ -1158,7 +1154,7 @@ extension Parser {
       break
     }
 
-    var path: [ImportDeclaration.PathIdentifier] = []
+    var path: IdentifierList = []
     let pathIdentifierTokens: [Token.Kind] = [
       .dummyIdentifier,
       .dummyPrefixOperator,
@@ -1170,19 +1166,16 @@ extension Parser {
     repeat {
       endLocation = getEndLocation()
       switch _lexer.read(pathIdentifierTokens) {
-      case .identifier(let name):
-        path.append(name)
-      case .prefixOperator(let op),
-        .binaryOperator(let op),
-        .postfixOperator(let op):
-        path.append(op)
+      case let .identifier(name, backticked):
+        path.append(backticked ? .backtickedName(name) : .name(name))
+      case .prefixOperator(let op), .binaryOperator(let op), .postfixOperator(let op):
+        path.append(.name(op))
       default:
         throw _raiseFatal(.missingModuleNameImportDecl)
       }
     } while _lexer.match(.dot)
 
-    let importDecl = ImportDeclaration(
-      attributes: attrs, kind: kind, path: path)
+    let importDecl = ImportDeclaration(attributes: attrs, kind: kind, path: path)
     importDecl.setSourceRange(startLocation, endLocation)
     return importDecl
   }
