@@ -19,27 +19,27 @@ import AST
 import Lexer
 
 extension Parser {
-  func assert(_ cond: Bool, orFatal fatalError: ParserErrorKind) throws {
+  public func assert(_ cond: Bool, orFatal fatalError: ParserErrorKind) throws {
     guard cond else { throw _raiseFatal(fatalError) }
   }
 
-  func assert(_ cond: Bool, orError error: ParserErrorKind) throws {
+  public func assert(_ cond: Bool, orError error: ParserErrorKind) throws {
     if !cond { try _raiseError(error) }
   }
 
-  func match(_ kinds: [Token.Kind], exactMatch: Bool = false, orFatal fatalError: ParserErrorKind) throws {
+  public func match(_ kinds: [Token.Kind], exactMatch: Bool = false, orFatal fatalError: ParserErrorKind) throws {
     try assert(_lexer.match(kinds, exactMatch: exactMatch), orFatal: fatalError)
   }
 
-  func match(_ kind: Token.Kind, exactMatch: Bool = false, orFatal fatalError: ParserErrorKind) throws {
+  public func match(_ kind: Token.Kind, exactMatch: Bool = false, orFatal fatalError: ParserErrorKind) throws {
     try match([kind], exactMatch: exactMatch, orFatal: fatalError)
   }
 
-  func readIdentifier(_ id: String, orFatal fatalError: ParserErrorKind) throws {
+  public func readIdentifier(_ id: String, orFatal fatalError: ParserErrorKind) throws {
     try assert(_lexer.read(.dummyIdentifier) == .identifier(id, false), orFatal: fatalError)
   }
 
-  func readNamedIdentifier() -> Identifier? {
+  public func readNamedIdentifier() -> Identifier? {
     guard let s = _lexer.look().kind.namedIdentifier else {
       return nil
     }
@@ -47,7 +47,7 @@ extension Parser {
     return s.id
   }
 
-  func readNamedIdentifierOrWildcard() -> Identifier? {
+  public func readNamedIdentifierOrWildcard() -> Identifier? {
     guard let s = _lexer.look().kind.namedIdentifierOrWildcard else {
       return nil
     }
@@ -55,7 +55,7 @@ extension Parser {
     return s.id
   }
 
-  @discardableResult func readUntilEOL() -> String {
+  @discardableResult public func readUntilEOL() -> String {
     var str = ""
     while let scalar = _lexer.lookUnicodeScalar() {
       guard scalar != "\n" else { return str }
