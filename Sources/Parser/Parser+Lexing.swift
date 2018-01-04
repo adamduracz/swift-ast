@@ -68,7 +68,7 @@ extension Parser {
 }
 
 extension NamedIdentifier {
-  var id: Identifier {
+  public var id: Identifier {
     switch self {
     case .name(let n): return .name(n)
     case .backtickedName(let n): return .backtickedName(n)
